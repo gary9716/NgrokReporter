@@ -2,7 +2,7 @@ import configparser
 import subprocess
 import time
 import signal
-import threading
+import requests
 
 # 建立 ConfigParser
 config = configparser.ConfigParser()
@@ -12,6 +12,7 @@ ngrok = config['ngrok']['path']
 port = config['ngrok']['port']
 protocol = config['ngrok']['protocol']
 auth = config['ngrok']['auth']
+apiToken = config['ngrok']['api-token']
 curProc = None
 
 def handler(signum, frame):
@@ -19,29 +20,31 @@ def handler(signum, frame):
         curProc.terminate()
     exit(1)
 
+def queryTunnelsInfo():
+    url = 'https://api.ngrok.com/tunnels'
+    headers = {
+        'Authorization': f'Bearer {apiToken}',
+        'Ngrok-Version': '2'
+    }
+    response = requests.get(
+        url,
+        headers=headers,
+        timeout=30
+    )
+    result = response.json()
+    print(result)
+
 signal.signal(signal.SIGINT, handler)
 
-def read_output(pipe, target):
-    while True:
-        output_line = pipe.readline()
-        if output_line:
-            target(output_line.strip())
-        else:
-            break
+try:
+    curProc = subprocess.Popen([ngrok, "authtoken", auth], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    curProc.wait()
 
-curProc = subprocess.Popen([ngrok, "authtoken", auth])
-curProc.wait()
+    curProc = subprocess.Popen([ngrok, protocol, port], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT, text=True)
+    time.sleep(3)
+    queryTunnelsInfo()
 
-curProc = subprocess.Popen([ngrok, protocol, port], stdout=subprocess.PIPE, text=True)
-stdout_thread = threading.Thread(target=read_output, args=(curProc.stdout, print))
-stdout_thread.start()
-stdout_thread.join()
-
-#
-# while True:
-#     curProc.stdout.flush()
-#     output_line = curProc.stdout.readline()
-#     if output_line:
-#         print(output_line.strip())
-#     else:
-#         break
+    curProc.wait()
+finally:
+    if curProc:
+        curProc.kill()
