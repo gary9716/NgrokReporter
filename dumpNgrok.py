@@ -19,6 +19,7 @@ def handler(signum, frame):
     if curProc:
         curProc.terminate()
     exit(1)
+signal.signal(signal.SIGINT, handler)
 
 def queryTunnelsInfo():
     url = 'https://api.ngrok.com/tunnels'
@@ -34,7 +35,6 @@ def queryTunnelsInfo():
     result = response.json()
     print(result)
 
-signal.signal(signal.SIGINT, handler)
 
 try:
     curProc = subprocess.Popen([ngrok, "authtoken", auth], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
