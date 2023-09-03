@@ -7,6 +7,7 @@ import subprocess
 import time
 import signal
 import requests
+from wakeonlan import send_magic_packet
 
 # 建立 ConfigParser
 config = configparser.ConfigParser()
@@ -52,7 +53,6 @@ def queryTunnelsInfo():
     return str(response.json())
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    cmd = update.message.text #one can parse arguments from cmd
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="I'm a ngrok reporter, you can start ngrok with /boot, dump tunnels info with /tunnels")
 
@@ -84,6 +84,17 @@ async def shutDown(update: Update, context: ContextTypes.DEFAULT_TYPE):
         curProc.kill()
         curProc = None
 
+async def wakeOnLan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    cmd = update.message.text
+    parts = cmd.split(' ')
+    if len(parts) > 1:
+        mac = parts[0]
+    else:
+        mac = 'NULL'
+    send_magic_packet(mac)
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text=f'done, send magic packets to {mac}')
+
 def addHandler(application, tag, handler):
     cmdHandler = CommandHandler(tag, handler)
     application.add_handler(cmdHandler)
@@ -96,7 +107,8 @@ if __name__ == '__main__':
         addHandler(application, 'boot', boot)
         addHandler(application, 'tunnels', reportTunnels)
         addHandler(application, 'shutdown', shutDown)
-
+        addHandler(application, 'wake', wakeOnLan)
+        
         application.run_polling()
     finally:
         if curProc:
