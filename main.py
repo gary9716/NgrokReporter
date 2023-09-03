@@ -88,7 +88,7 @@ async def wakeOnLan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cmd = update.message.text
     parts = cmd.split(' ')
     if len(parts) > 1:
-        mac = parts[0]
+        mac = parts[1]
     else:
         mac = 'NULL'
     send_magic_packet(mac)
@@ -108,7 +108,7 @@ if __name__ == '__main__':
         addHandler(application, 'tunnels', reportTunnels)
         addHandler(application, 'shutdown', shutDown)
         addHandler(application, 'wake', wakeOnLan)
-        
+
         application.run_polling()
     finally:
         if curProc:
