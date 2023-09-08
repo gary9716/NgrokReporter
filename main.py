@@ -10,6 +10,7 @@ import requests
 import sys
 import traceback
 from wakeonlan import send_magic_packet
+import json
 
 # 建立 ConfigParser
 config = configparser.ConfigParser()
@@ -125,7 +126,9 @@ async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE)
         id = 'id'
 
     try:
-        tunnels = queryTunnelsInfo()['tunnels']
+        jsonStr = queryTunnelsInfo()
+        data = json.loads(jsonStr)
+        tunnels = data['tunnels']
         for tunnel in tunnels:
             if tunnel['proto'] == 'tcp' and tunnel['endpoint']['forwards_to'] == 'localhost:22':
                 publicUrl = tunnel['public_url']
