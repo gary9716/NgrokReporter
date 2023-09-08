@@ -95,6 +95,44 @@ async def wakeOnLan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=f'done, send magic packets to {mac}')
 
+def parseTcpDomainAndPort(url):
+    import re
+
+    # Define a regular expression pattern to match the domain and port
+    pattern = r'tcp://([^:/]+):(\d+)'
+
+    # Use re.search to find the match in the input string
+    match = re.search(pattern, url)
+
+    # Check if a match was found
+    if match:
+        # Group 1 contains the domain, and group 2 contains the port
+        domain = match.group(1)
+        port = int(match.group(2))
+        print(f"Domain: {domain}, Port: {port}")
+        return (domain, port)
+    else:
+        print("No match found.")
+
+async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tunnels = queryTunnelsInfo()['tunnels']
+    cmd = update.message.text
+    parts = cmd.split(' ')
+    if len(parts) > 1:
+        id = parts[1]
+    else:
+        id = 'id'
+
+    for tunnel in tunnels:
+        if tunnel['proto'] == 'tcp' and tunnel['endpoint']['forwards_to'] == 'localhost:22':
+            publicUrl = tunnel['public_url']
+            domain,port = parseTcpDomainAndPort(publicUrl)
+            await context.bot.send_message(chat_id=update.effective_chat.id,
+                                           text=f'ssh {id}@{domain} -p {port}')
+            return
+
+    await context.bot.send_message(chat_id=update.effective_chat.id, text='no ssh tunnel right now')
+
 def addHandler(application, tag, handler):
     cmdHandler = CommandHandler(tag, handler)
     application.add_handler(cmdHandler)
@@ -108,6 +146,7 @@ if __name__ == '__main__':
         addHandler(application, 'tunnels', reportTunnels)
         addHandler(application, 'shutdown', shutDown)
         addHandler(application, 'wake', wakeOnLan)
+        addHandler(application, 'ssh', sshTunnelCmdReport)
 
         application.run_polling()
     finally:
