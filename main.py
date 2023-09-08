@@ -8,6 +8,7 @@ import time
 import signal
 import requests
 import sys
+import traceback
 from wakeonlan import send_magic_packet
 
 # 建立 ConfigParser
@@ -116,7 +117,6 @@ def parseTcpDomainAndPort(url):
         print("No match found.")
 
 async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     cmd = update.message.text
     parts = cmd.split(' ')
     if len(parts) > 1:
@@ -133,9 +133,9 @@ async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 await context.bot.send_message(chat_id=update.effective_chat.id,
                                                text=f'ssh {id}@{domain} -p {port}')
                 return
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'no ssh tunnel right now, err:{e}')
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'no ssh tunnel right now')
     except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'no ssh tunnel right now, err:{e}')
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'err: {traceback.format_exc()}')
 
 def addHandler(application, tag, handler):
     cmdHandler = CommandHandler(tag, handler)
