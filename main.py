@@ -7,6 +7,7 @@ import subprocess
 import time
 import signal
 import requests
+import sys
 from wakeonlan import send_magic_packet
 
 # 建立 ConfigParser
@@ -132,7 +133,8 @@ async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 await context.bot.send_message(chat_id=update.effective_chat.id,
                                                text=f'ssh {id}@{domain} -p {port}')
                 return
-    except e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'no ssh tunnel right now, err:{e}')
+    except Exception as e:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f'no ssh tunnel right now, err:{e}')
 
 def addHandler(application, tag, handler):
