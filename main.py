@@ -55,7 +55,7 @@ def queryTunnelsInfo():
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text="I'm a ngrok reporter, you can start ngrok with /boot, dump tunnels info with /tunnels")
+                                   text="I'm a ngrok reporter, you can start ngrok with /boot, dump tunnels info with /tunnels, or report ssh tunnel with /ssh")
 
 async def reportTunnels(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
