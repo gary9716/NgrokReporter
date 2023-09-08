@@ -53,7 +53,7 @@ def queryTunnelsInfo():
         headers=headers,
         timeout=5
     )
-    return str(response.json())
+    return response.json()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -61,7 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def reportTunnels(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=queryTunnelsInfo())
+                                   text=str(queryTunnelsInfo()))
 
 async def boot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global curProc
@@ -126,8 +126,7 @@ async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE)
         id = 'id'
 
     try:
-        jsonStr = queryTunnelsInfo()
-        data = json.loads(jsonStr)
+        data = queryTunnelsInfo()
         tunnels = data['tunnels']
         for tunnel in tunnels:
             if tunnel['proto'] == 'tcp' and tunnel['endpoint']['forwards_to'] == 'localhost:22':
