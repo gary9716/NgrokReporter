@@ -16,6 +16,7 @@ import json
 config = configparser.ConfigParser()
 config.read('config.ini')
 TOKEN = config['bot']['token']
+ngrokDaemon = None
 
 import logging
 from telegram import Update
@@ -34,11 +35,15 @@ apiToken = config['ngrok']['api-token']
 curProc = None
 application = None
 
-def handler(signum, frame):
-    global curProc
+def stopProcess():
+    global curProc, ngrokDaemon
     if curProc:
-        curProc.terminate()
+        curProc.kill()
         curProc = None
+    ngrokDaemon = None
+
+def handler(signum, frame):
+    stopProcess()
     exit(1)
 signal.signal(signal.SIGINT, handler)
 
@@ -64,9 +69,10 @@ async def reportTunnels(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    text=str(queryTunnelsInfo()))
 
 async def boot(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    global curProc
+    global curProc, ngrokDaemon
     if curProc:
         curProc.kill()
+    ngrokDaemon = None
     curProc = subprocess.Popen([ngrok, "authtoken", auth],
                                stdout=subprocess.DEVNULL,
                                stderr=subprocess.STDOUT)
@@ -75,6 +81,7 @@ async def boot(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                stdout=subprocess.DEVNULL,
                                stderr=subprocess.STDOUT,
                                text=True)
+    ngrokDaemon = curProc
     time.sleep(1)
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text='ngrok boot')
@@ -82,10 +89,7 @@ async def boot(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def shutDown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text='ok, time to shutdown')
-    global curProc
-    if curProc:
-        curProc.kill()
-        curProc = None
+    stopProcess()
 
 async def wakeOnLan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cmd = update.message.text
@@ -126,10 +130,12 @@ async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE)
         id = 'id'
 
     try:
+        if ngrokDaemon is None:
+            boot(update=update, context=context)
         data = queryTunnelsInfo()
         tunnels = data['tunnels']
         for tunnel in tunnels:
-            if tunnel['proto'] == 'tcp' and tunnel['endpoint']['forwards_to'] == 'localhost:22':
+            if tunnel['proto'] == 'tcp' and tunnel['forwards_to'] == 'localhost:22':
                 publicUrl = tunnel['public_url']
                 domain,port = parseTcpDomainAndPort(publicUrl)
                 await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -158,3 +164,4 @@ if __name__ == '__main__':
     finally:
         if curProc:
             curProc.kill()
+        ngrokDaemon = None
