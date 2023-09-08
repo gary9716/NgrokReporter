@@ -115,7 +115,7 @@ def parseTcpDomainAndPort(url):
         print("No match found.")
 
 async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    tunnels = queryTunnelsInfo()['tunnels']
+
     cmd = update.message.text
     parts = cmd.split(' ')
     if len(parts) > 1:
@@ -123,15 +123,17 @@ async def sshTunnelCmdReport(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         id = 'id'
 
-    for tunnel in tunnels:
-        if tunnel['proto'] == 'tcp' and tunnel['endpoint']['forwards_to'] == 'localhost:22':
-            publicUrl = tunnel['public_url']
-            domain,port = parseTcpDomainAndPort(publicUrl)
-            await context.bot.send_message(chat_id=update.effective_chat.id,
-                                           text=f'ssh {id}@{domain} -p {port}')
-            return
-
-    await context.bot.send_message(chat_id=update.effective_chat.id, text='no ssh tunnel right now')
+    try:
+        tunnels = queryTunnelsInfo()['tunnels']
+        for tunnel in tunnels:
+            if tunnel['proto'] == 'tcp' and tunnel['endpoint']['forwards_to'] == 'localhost:22':
+                publicUrl = tunnel['public_url']
+                domain,port = parseTcpDomainAndPort(publicUrl)
+                await context.bot.send_message(chat_id=update.effective_chat.id,
+                                               text=f'ssh {id}@{domain} -p {port}')
+                return
+    except e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f'no ssh tunnel right now, err:{e}')
 
 def addHandler(application, tag, handler):
     cmdHandler = CommandHandler(tag, handler)
